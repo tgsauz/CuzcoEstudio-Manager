@@ -15,7 +15,7 @@ namespace eval ttk::theme::forest-light {
         -disabledfg     "#595959"
         -disabledbg     "#ffffff"
         -selectfg       "#ffffff"
-        -selectbg       "#d47a19"
+        -selectbg       "#217346"
     }
 
     proc LoadImages {imgdir} {
