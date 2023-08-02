@@ -11,21 +11,21 @@ from openpyxl.utils import get_column_letter
 locale.setlocale(locale.LC_ALL, 'es_ES')
 
 # Guardar archivo en Excel
-def guardar_en_excel(banda, sala, abonado, fecha, horario):
+def guardar_en_excel(banda, sala, abonado, fecha, horario, tiempo):
     archivo_excel = "calendario_bandas.xlsx"
 
     if not os.path.exists(archivo_excel):
         # Si el archivo no existe, creamos uno nuevo con las cabeceras
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.append(["Banda", "Sala", "Abonado", "Fecha", "Horario"])
+        ws.append(["Banda", "Sala", "Abonado", "Fecha", "Horario", "Tiempo"])
     else:
         # Si el archivo ya existe, abrimos el archivo existente
         wb = openpyxl.load_workbook(archivo_excel)
         ws = wb.active
 
     # Agregar una nueva fila con los datos
-    nueva_fila = [banda, sala, abonado, fecha, horario]
+    nueva_fila = [banda, sala, abonado, fecha, horario, tiempo]
     ws.append(nueva_fila)
 
     # Guardar los cambios en el archivo
@@ -231,8 +231,6 @@ class AgendaTab(ttk.Frame):
         else:
             self.style.theme_use("forest-light")
 
-        self.root.update()
-
 # Crear el Notebook para las pestañas
 frame = ttk.Frame(root)
 frame.pack()
@@ -264,7 +262,7 @@ def cargar_datos_en_listado(tab):
     for row in ws.iter_rows(values_only=True):
         # Verificar que la fila tenga al menos cinco elementos (banda, sala, abonado, fecha y horario)
         if len(row) >= 5:
-            banda, sala, abonado, fecha, horario = row
+            banda, sala, abonado, fecha, horario, tiempo = row
             # Verificar si todas las celdas necesarias contienen información
             if banda and sala and abonado and fecha and horario:
                 # Verificar si la fecha es válida antes de formatearla
@@ -272,7 +270,7 @@ def cargar_datos_en_listado(tab):
                     fecha_formateada = fecha.strftime('%d/%m/%Y')
                 else:
                     fecha_formateada = ""
-                data.append((banda, sala, abonado, fecha_formateada, horario))
+                data.append((banda, sala, abonado, fecha_formateada, horario, tiempo))
 
     # Limpiar el contenido actual del widget de listado en la pestaña específica
     tab.lista.delete(*tab.lista.get_children())
