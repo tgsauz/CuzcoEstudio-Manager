@@ -49,6 +49,8 @@ class AgendaTab(ttk.Frame):
     def __init__(self):
         super().__init__()
 
+        self.data = []  # Variable para almacenar los datos cargados desde el archivo Excel
+
         # Crear un frame para contener los widgets de la columna 1
         column1_frame = ttk.Frame(self)
         column1_frame.grid(row=0, column=0, padx=5, pady=(0, 5), sticky="nsew")
@@ -150,25 +152,20 @@ class AgendaTab(ttk.Frame):
         for item in selected_items:
             self.lista.delete(item)
 
+        # Eliminar las entradas seleccionadas del dato en memoria (self.data)
+        self.data = [row for row in self.data if tuple(row) not in selected_items]
+
         # Guardar los cambios en el archivo Excel
         archivo_excel = "calendario_bandas.xlsx"
         if os.path.exists(archivo_excel):
             wb = openpyxl.load_workbook(archivo_excel)
             ws = wb.active
 
-            # Obtener los datos actuales del archivo Excel
-            data = []
-            for row in ws.iter_rows(values_only=True):
-                data.append(row)
-
-            # Eliminar las entradas seleccionadas de los datos
-            new_data = [row for row in data if tuple(row) not in selected_items]
-
             # Borrar el contenido existente en el archivo Excel
             ws.delete_rows(2, ws.max_row)
 
             # Agregar los datos actualizados al archivo Excel
-            for row in new_data:
+            for row in self.data:
                 ws.append(row)
 
             # Guardar los cambios en el archivo
@@ -251,6 +248,7 @@ def cargar_datos_en_listado(tab):
 
     if not os.path.exists(archivo_excel):
         # Si el archivo no existe, no hay datos para cargar
+        tab.data = []
         return []
 
     # Abrir el archivo Excel y obtener la hoja activa
@@ -258,7 +256,7 @@ def cargar_datos_en_listado(tab):
     ws = wb.active
 
     # Leer los datos de cada fila y almacenarlos en una lista
-    data = []
+    tab.data = []
     for row in ws.iter_rows(values_only=True):
         # Verificar que la fila tenga al menos cinco elementos (banda, sala, abonado, fecha y horario)
         if len(row) >= 5:
@@ -270,13 +268,13 @@ def cargar_datos_en_listado(tab):
                     fecha_formateada = fecha.strftime('%d/%m/%Y')
                 else:
                     fecha_formateada = ""
-                data.append((banda, sala, abonado, fecha_formateada, horario, tiempo))
+                tab.data.append((banda, sala, abonado, fecha_formateada, horario, tiempo))
 
     # Limpiar el contenido actual del widget de listado en la pestaña específica
     tab.lista.delete(*tab.lista.get_children())
 
     # Insertar los datos en el widget de listado en la pestaña específica
-    for row in data:
+    for row in tab.data:
         tab.lista.insert("", "end", values=row)
 
 #CargadodeDatos
