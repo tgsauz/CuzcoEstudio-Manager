@@ -258,16 +258,16 @@ def cargar_datos_en_listado(tab):
     # Leer los datos de cada fila y almacenarlos en una lista
     tab.data = []
     for row in ws.iter_rows(values_only=True):
-        # Verificar que la fila tenga al menos cinco elementos (banda, sala, abonado, fecha y horario)
-        if len(row) >= 5:
+        # Verificar que la fila tenga al menos seis elementos (banda, sala, abonado, fecha, horario, tiempo)
+        if len(row) >= 6:
             banda, sala, abonado, fecha, horario, tiempo = row
             # Verificar si todas las celdas necesarias contienen información
             if banda and sala and abonado and fecha and horario:
                 # Verificar si la fecha es válida antes de formatearla
-                if fecha:
-                    fecha_formateada = fecha.strftime('%d/%m/%Y')
+                if isinstance(fecha, str):  # Verificar si la fecha es una cadena (string)
+                    fecha_formateada = fecha  # Si es una cadena, usarla tal cual
                 else:
-                    fecha_formateada = ""
+                    fecha_formateada = fecha.strftime('%d/%m/%Y')  # Si es un objeto datetime, formatearla
                 tab.data.append((banda, sala, abonado, fecha_formateada, horario, tiempo))
 
     # Limpiar el contenido actual del widget de listado en la pestaña específica
