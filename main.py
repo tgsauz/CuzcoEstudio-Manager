@@ -10,7 +10,14 @@ from openpyxl.utils import get_column_letter
 
 locale.setlocale(locale.LC_ALL, 'es_ES')
 
-# Guardar archivo en Excel
+# Función para verificar si una fila ya existe en el archivo Excel
+def fila_existe_en_excel(ws, banda, sala, abonado, fecha, horario, tiempo):
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        if row[0] == banda and row[1] == sala and row[2] == abonado and row[3] == fecha and row[4] == horario and row[5] == tiempo:
+            return True
+    return False
+
+# Función para guardar los datos en el archivo Excel
 def guardar_en_excel(banda, sala, abonado, fecha, horario, tiempo):
     archivo_excel = "calendario_bandas.xlsx"
 
@@ -18,18 +25,32 @@ def guardar_en_excel(banda, sala, abonado, fecha, horario, tiempo):
         # Si el archivo no existe, creamos uno nuevo con las cabeceras
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.append(["Banda", "Sala", "Abonado", "Fecha", "Horario", "Tiempo"])
+        ws.append(["ID", "Banda", "Sala", "Abonado", "Fecha", "Horario", "Tiempo"])
     else:
         # Si el archivo ya existe, abrimos el archivo existente
         wb = openpyxl.load_workbook(archivo_excel)
         ws = wb.active
 
-    # Agregar una nueva fila con los datos
-    nueva_fila = [banda, sala, abonado, fecha, horario, tiempo]
+    # Obtener el último ID utilizado
+    id_counter = 1 if ws.max_row == 1 else ws.max_row - 1
+
+    # Incrementar el ID para el próximo registro
+    id_counter += 1
+
+    # Verificar si el horario o el tiempo son None, y asignarles un valor por defecto en ese caso
+    horario = horario if horario else "Horario no especificado"
+    tiempo = tiempo if tiempo else "Tiempo no especificado"
+
+    # Agregar una nueva fila con los datos y el ID
+    nueva_fila = [id_counter, banda, sala, abonado, fecha, horario, tiempo]
     ws.append(nueva_fila)
 
-    # Guardar los cambios en el archivo
+    # Guardar los cambios en el archivo sin enumerar las filas
+    if ws.max_row > 1:
+        ws.cell(row=ws.max_row, column=1, value=id_counter)  # Establecer el valor de la columna ID sin enumerar
+
     wb.save(archivo_excel)
+
 
 # Función para mostrar la pestaña "Otras Datos" cuando se hace clic en el botón
 def mostrar_otras_tab():
@@ -143,6 +164,9 @@ class AgendaTab(ttk.Frame):
             tk.messagebox.showinfo("Advertencia", "Por favor, selecciona al menos una entrada para borrar.")
             return
 
+        # Verificar si los elementos seleccionados existen en el árbol antes de intentar borrarlos
+        selected_indices = [int(self.lista.index(item)) for item in selected_items if self.lista.exists(item)]
+
         # Preguntar al usuario si realmente quiere borrar las entradas seleccionadas
         confirmacion = tk.messagebox.askyesno("Confirmar", "¿Estás seguro de que quieres borrar las entradas seleccionadas?")
         if not confirmacion:
@@ -153,7 +177,8 @@ class AgendaTab(ttk.Frame):
             self.lista.delete(item)
 
         # Eliminar las entradas seleccionadas del dato en memoria (self.data)
-        self.data = [row for row in self.data if tuple(row) not in selected_items]
+        for index in sorted(selected_indices, reverse=True):  # Recorrer en orden inverso para evitar desplazamientos
+            del self.data[index]
 
         # Guardar los cambios en el archivo Excel
         archivo_excel = "calendario_bandas.xlsx"
@@ -257,10 +282,10 @@ def cargar_datos_en_listado(tab):
 
     # Leer los datos de cada fila y almacenarlos en una lista
     tab.data = []
-    for row in ws.iter_rows(values_only=True):
-        # Verificar que la fila tenga al menos seis elementos (banda, sala, abonado, fecha, horario, tiempo)
-        if len(row) >= 6:
-            banda, sala, abonado, fecha, horario, tiempo = row
+    for row in ws.iter_rows(min_row=1, values_only=True):
+        # Verificar que la fila tenga al menos seis elementos (ID, banda, sala, abonado, fecha, horario, tiempo)
+        if len(row) >= 7:
+            id, banda, sala, abonado, fecha, horario, tiempo = row
             # Verificar si todas las celdas necesarias contienen información
             if banda and sala and abonado and fecha and horario:
                 # Verificar si la fecha es válida antes de formatearla
@@ -268,14 +293,14 @@ def cargar_datos_en_listado(tab):
                     fecha_formateada = fecha  # Si es una cadena, usarla tal cual
                 else:
                     fecha_formateada = fecha.strftime('%d/%m/%Y')  # Si es un objeto datetime, formatearla
-                tab.data.append((banda, sala, abonado, fecha_formateada, horario, tiempo))
+                tab.data.append((id, banda, sala, abonado, fecha_formateada, horario, tiempo))
 
     # Limpiar el contenido actual del widget de listado en la pestaña específica
     tab.lista.delete(*tab.lista.get_children())
 
     # Insertar los datos en el widget de listado en la pestaña específica
     for row in tab.data:
-        tab.lista.insert("", "end", values=row)
+        tab.lista.insert("", "end", values=row[1:])  # Excluir el ID de la visualización en el Treeview
 
 #CargadodeDatos
 cargar_datos_en_listado(tab_agenda)
