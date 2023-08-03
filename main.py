@@ -25,31 +25,26 @@ def guardar_en_excel(banda, sala, abonado, fecha, horario, tiempo):
         # Si el archivo no existe, creamos uno nuevo con las cabeceras
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.append(["ID", "Banda", "Sala", "Abonado", "Fecha", "Horario", "Tiempo"])
+        ws.append(["Banda", "Sala", "Abonado", "Fecha", "Horario", "Tiempo"])
     else:
         # Si el archivo ya existe, abrimos el archivo existente
         wb = openpyxl.load_workbook(archivo_excel)
         ws = wb.active
 
-    # Obtener el último ID utilizado
-    id_counter = 1 if ws.max_row == 1 else ws.max_row - 1
-
-    # Incrementar el ID para el próximo registro
-    id_counter += 1
-
     # Verificar si el horario o el tiempo son None, y asignarles un valor por defecto en ese caso
     horario = horario if horario else "Horario no especificado"
     tiempo = tiempo if tiempo else "Tiempo no especificado"
 
-    # Agregar una nueva fila con los datos y el ID
-    nueva_fila = [id_counter, banda, sala, abonado, fecha, horario, tiempo]
+    # Agregar una nueva fila con los datos
+    nueva_fila = [banda, sala, abonado, fecha, horario, tiempo]
     ws.append(nueva_fila)
 
-    # Guardar los cambios en el archivo sin enumerar las filas
-    if ws.max_row > 1:
-        ws.cell(row=ws.max_row, column=1, value=id_counter)  # Establecer el valor de la columna ID sin enumerar
-
+    # Guardar los cambios en el archivo
     wb.save(archivo_excel)
+
+    # Agregar los nuevos datos a la lista data
+    tab_agenda.data.append(nueva_fila[1:])  # Excluir el ID de la visualización en el Treeview
+
 
 
 # Función para mostrar la pestaña "Otras Datos" cuando se hace clic en el botón
@@ -242,6 +237,10 @@ class AgendaTab(ttk.Frame):
             tab_agenda.fechaReserva.set_date(date.today())
             tab_agenda.hora_entry.delete(0, "end")
             tab_agenda.tiempo_combobox.set("Seleccionar tiempo")  # Limpiar el combobox de tiempo
+
+            # Después de agregar la entrada, cargar nuevamente los datos para actualizar el widget de lista
+            cargar_datos_en_listado(tab_agenda)
+
         else:
             # Mostrar un mensaje de error si falta algún campo
             tk.messagebox.showerror("Error", "Por favor, completa todos los campos.")
@@ -283,9 +282,9 @@ def cargar_datos_en_listado(tab):
     # Leer los datos de cada fila y almacenarlos en una lista
     tab.data = []
     for row in ws.iter_rows(min_row=1, values_only=True):
-        # Verificar que la fila tenga al menos seis elementos (ID, banda, sala, abonado, fecha, horario, tiempo)
-        if len(row) >= 7:
-            id, banda, sala, abonado, fecha, horario, tiempo = row
+        # Verificar que la fila tenga al menos seis elementos (banda, sala, abonado, fecha, horario, tiempo)
+        if len(row) >= 6:
+            banda, sala, abonado, fecha, horario, tiempo = row
             # Verificar si todas las celdas necesarias contienen información
             if banda and sala and abonado and fecha and horario:
                 # Verificar si la fecha es válida antes de formatearla
@@ -293,14 +292,14 @@ def cargar_datos_en_listado(tab):
                     fecha_formateada = fecha  # Si es una cadena, usarla tal cual
                 else:
                     fecha_formateada = fecha.strftime('%d/%m/%Y')  # Si es un objeto datetime, formatearla
-                tab.data.append((id, banda, sala, abonado, fecha_formateada, horario, tiempo))
+                tab.data.append((banda, sala, abonado, fecha_formateada, horario, tiempo))
 
     # Limpiar el contenido actual del widget de listado en la pestaña específica
     tab.lista.delete(*tab.lista.get_children())
 
     # Insertar los datos en el widget de listado en la pestaña específica
     for row in tab.data:
-        tab.lista.insert("", "end", values=row[1:])  # Excluir el ID de la visualización en el Treeview
+        tab.lista.insert("", "end", values=row)
 
 #CargadodeDatos
 cargar_datos_en_listado(tab_agenda)
