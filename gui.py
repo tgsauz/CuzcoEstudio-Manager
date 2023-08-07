@@ -11,12 +11,12 @@ import logic
 listaSala_combo = ["Sala A", "Sala B", "Sala C", "Sala Z", "ESTUDIO"]
 
 class AgendaTab(ttk.Frame):
-    def __init__(self, parent):
-        super().__init__(parent)
+    def __init__(self, master):
+        super().__init__(master)
 
         self.data = []  # Variable para almacenar los datos cargados desde el archivo Excel
 
-        self.parent = parent
+        self.master = master
         self.create_widgets()
 
         # Conectar a la base de datos SQLite
@@ -90,30 +90,28 @@ class AgendaTab(ttk.Frame):
         treeFrame.columnconfigure(0, weight=1)
 
         # Frame para el TreeView
-        cols = ("ID","Banda", "Sala", "Fecha", "Horario", "Tiempo", "Abonado")
+        cols = ("ID", "Banda", "Sala", "Fecha", "Horario", "Tiempo", "Abonado")
         self.lista = ttk.Treeview(treeFrame, show="headings", yscrollcommand=treeScroll.set, columns=cols, height=13)
 
         # Configurar los encabezados de las columnas
+        self.lista.heading("ID", text="", anchor=tk.W)
         self.lista.heading("Banda", text="Banda")
         self.lista.heading("Sala", text="Sala")
-        self.lista.heading("Abonado", text="Abonado")
         self.lista.heading("Fecha", text="Fecha")
         self.lista.heading("Horario", text="Horario")
         self.lista.heading("Tiempo", text="Tiempo")
+        self.lista.heading("Abonado", text="Abonado")
 
-        self.lista.column("ID", width=0, anchor = "center", stretch=False)
+        self.lista.column("ID", width=0, stretch=tk.NO)  # Columna invisible para el ID
         self.lista.column("Banda", width=120, anchor = "center", stretch=False)
         self.lista.column("Sala", width=100, anchor = "center", stretch=False)
-        self.lista.column("Abonado", width=55, anchor = "center", stretch=False)
         self.lista.column("Fecha", width=75, anchor = "center", stretch=False)
         self.lista.column("Horario", width=50, anchor = "center", stretch=False)
         self.lista.column("Tiempo", width=50, anchor = "center", stretch=False)
+        self.lista.column("Abonado", width=55, anchor = "center", stretch=False)
 
         treeScroll.config(command=self.lista.yview)
         self.lista.pack(expand=True, fill="both")
-
-        # Cargar datos al TreeView
-        self.cargar_datos_en_listado()
 
     def agregar_a_calendario(self):
         # Obtener los datos ingresados en los widgets
@@ -143,13 +141,13 @@ class AgendaTab(ttk.Frame):
 
         # Validar que todos los campos estén completos antes de agregar a la tabla
         if banda and sala and fecha and horario and tiempo:
-            self.lista.insert("", "end", values=(banda, sala, fecha, horario, tiempo, abonado))
 
             # Guardar los datos en el hoja de cálculo
-            id_banda = logic.guardar_reserva(sala, banda, fecha, horario, tiempo, abonado)
+            id_reserva = logic.guardar_reserva(banda, sala, fecha, horario, tiempo, abonado)
 
-                # Insertar la reserva en el Treeview y mostrar el ID de la banda
-            self.tree.insert("", "end", values=(id_banda, banda, sala, fecha, horario, tiempo, abonado))    
+            # Insertar la reserva en el Treeview y mostrar el ID de reserva
+            self.lista.insert("", "end", values=(id_reserva, banda, sala, fecha, horario, tiempo, abonado))
+
 
             # Finalmente, limpiar los widgets para el siguiente ingreso
             self.name_entry.delete(0, "end")
@@ -178,14 +176,11 @@ class AgendaTab(ttk.Frame):
             return
 
         # Obtener las filas seleccionadas del TreeView
-        selected_ids = [self.lista.item(item, 'values')[0] for item in selected_items]
+        selected_ids = [int(self.lista.item(item, 'values')[0]) for item in selected_items]
 
         # Eliminar las filas seleccionadas del TreeView
         for item in selected_items:
             self.lista.delete(item)
-
-        # Eliminar las filas correspondientes de la lista self.data
-        self.data = [row for row in self.data if list(row) not in selected_ids]
 
         # Eliminar las reservas seleccionadas de la base de datos
         for id_reserva in selected_ids:
@@ -198,12 +193,14 @@ class AgendaTab(ttk.Frame):
         else:
             self.style.theme_use("forest-light")
 
-    def cargar_datos_en_listado(self):
-        data = logic.obtener_todas_reservas()
+    def cargar_datos_en_listado(self, data=None):
+        if data is None:
+            data = logic.cargar_datos()
+        # Limpiar el TreeView
         for item in self.lista.get_children():
             self.lista.delete(item)
-        # Insertamos los nuevos datos en el TreeView
+
+            # Insertamos los nuevos datos en el TreeView
         for row in data:
-            print(row) # IMPORTANTE PARA TESTEAR
             self.lista.insert("", "end", values=row)
 
