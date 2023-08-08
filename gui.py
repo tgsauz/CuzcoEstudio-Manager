@@ -4,7 +4,7 @@ from tkinter import messagebox
 import tkcalendar
 import openpyxl
 import os
-from datetime import date
+from datetime import date, datetime, timedelta
 from tkcalendar import Calendar
 import logic
 
@@ -40,10 +40,12 @@ class AgendaTab(ttk.Frame):
         self.fechaReserva.place(x=10, y=90, width=190)
 
         # Horario
-        self.hora_entry = ttk.Entry(self)
-        self.hora_entry.insert(0, "Horario")  # Texto de ejemplo en el Entry
-        self.hora_entry.bind("<FocusIn>", lambda e: self.hora_entry.delete('0', 'end'))
-        self.hora_entry.place(x=10, y=130, width=190)
+        horarios = []
+        for hora in range(24):
+            horarios.extend(["{}:00".format(str(hora).zfill(2)), "{}:30".format(str(hora).zfill(2))])
+        self.hora_spinbox = ttk.Spinbox(self, values=horarios)
+        self.hora_spinbox.insert(0, "Horario")  # Texto de ejemplo en el Entry
+        self.hora_spinbox.place(x=10, y=130, width=190)
 
         # Tiempo
         self.tiempo_combobox = ttk.Combobox(self, values=["1 hora", "2 horas", "3 horas", "4 horas"])
@@ -90,28 +92,27 @@ class AgendaTab(ttk.Frame):
         treeFrame.columnconfigure(0, weight=1)
 
         # Frame para el TreeView
-        cols = ("ID", "Banda", "Sala", "Fecha", "Horario", "Tiempo", "Abonado")
+        cols = ("Banda", "Sala", "Fecha", "Horario", "HR/s", "Abonado")
         self.lista = ttk.Treeview(treeFrame, show="headings", yscrollcommand=treeScroll.set, columns=cols, height=13)
 
         # Configurar los encabezados de las columnas
-        self.lista.heading("ID", text="", anchor=tk.W)
         self.lista.heading("Banda", text="Banda")
         self.lista.heading("Sala", text="Sala")
         self.lista.heading("Fecha", text="Fecha")
         self.lista.heading("Horario", text="Horario")
-        self.lista.heading("Tiempo", text="Tiempo")
+        self.lista.heading("HR/s", text="HR/s")
         self.lista.heading("Abonado", text="Abonado")
 
-        self.lista.column("ID", width=0, stretch=tk.NO)  # Columna invisible para el ID
         self.lista.column("Banda", width=120, anchor = "center", stretch=False)
         self.lista.column("Sala", width=100, anchor = "center", stretch=False)
         self.lista.column("Fecha", width=75, anchor = "center", stretch=False)
         self.lista.column("Horario", width=50, anchor = "center", stretch=False)
-        self.lista.column("Tiempo", width=50, anchor = "center", stretch=False)
+        self.lista.column("HR/s", width=50, anchor = "center", stretch=False)
         self.lista.column("Abonado", width=55, anchor = "center", stretch=False)
 
         treeScroll.config(command=self.lista.yview)
         self.lista.pack(expand=True, fill="both")
+        self.update()
 
     def agregar_a_calendario(self):
         # Obtener los datos ingresados en los widgets
@@ -119,50 +120,58 @@ class AgendaTab(ttk.Frame):
         sala = self.sala_combobox.get()
         abonado = "Si" if self.varAux.get() else "No"
         fecha = self.fechaReserva.get_date()
-        horario = self.hora_entry.get()
+        horario = self.hora_spinbox.get()
         tiempo = self.tiempo_combobox.get()
 
         # Validar que el nombre de la banda y la sala hayan sido ingresados
-        if not banda:
+        if not banda or banda == "Nombre de la banda":
             messagebox.showerror("Error", "Por favor, ingresa el nombre de la banda.")
             return
 
-        if not sala:
+        if not sala or sala == "Seleccionar SALA":
             messagebox.showerror("Error", "Por favor, selecciona una sala.")
             return
 
-        if not horario:
+        if not horario or horario == "Horario":
             messagebox.showerror("Error", "Por favor, ingresa un horario.")
             return
 
-        if not tiempo:
+        if not tiempo or tiempo == "Seleccionar tiempo":
             messagebox.showerror("Error", "Por favor, selecciona un tiempo.")
             return
 
-        # Validar que todos los campos estén completos antes de agregar a la tabla
-        if banda and sala and fecha and horario and tiempo:
+        # Obtener las horas y minutos del tiempo seleccionado
+        if "horas" in tiempo:
+            tiempo = tiempo.replace(' horas', '')
+        else:
+            tiempo = tiempo.replace(' hora', '')
 
+        # Calcular el horario de fin de la reserva
+        digitoAux = logic.extraer_digito(tiempo)
+        minutos = digitoAux * 60
+        hora_inicio_reserva = datetime.strptime(horario, "%H:%M")
+        hora_fin_reserva = hora_inicio_reserva + timedelta(minutes=minutos)
+
+        print("Pre DEF, FIN RESERVA: ", hora_fin_reserva, "INI RESERVA: ", hora_inicio_reserva)
+
+        # Validar si la sala está disponible en el horario seleccionado
+        if logic.sala_disponible(sala, fecha, hora_inicio_reserva.strftime("%H:%M"), hora_fin_reserva.strftime("%H:%M")):
             # Guardar los datos en el hoja de cálculo
-            id_reserva = logic.guardar_reserva(banda, sala, fecha, horario, tiempo, abonado)
-
-            # Insertar la reserva en el Treeview y mostrar el ID de reserva
-            self.lista.insert("", "end", values=(id_reserva, banda, sala, fecha, horario, tiempo, abonado))
-
+            logic.guardar_reserva(banda, sala, fecha, horario, tiempo, abonado)
 
             # Finalmente, limpiar los widgets para el siguiente ingreso
             self.name_entry.delete(0, "end")
-            self.sala_combobox.set("Seleccionar sala")
+            self.sala_combobox.set("Seleccionar SALA")
             self.varAux.set(False)
             self.fechaReserva.set_date(date.today())
-            self.hora_entry.delete(0, "end")
-            self.tiempo_combobox.set("Tiempo")  # Limpiar el combobox de tiempo
+            self.hora_spinbox.delete(0, "end")
+            self.tiempo_combobox.set("Seleccionar tiempo")  # Limpiar el combobox de tiempo
 
             # Después de agregar la entrada, cargar nuevamente los datos para actualizar el widget de lista
             self.cargar_datos_en_listado()
 
         else:
-            # Mostrar un mensaje de error si falta algún campo
-            messagebox.showerror("Error", "Por favor, completa todos los campos.")
+            messagebox.showerror("Error", "La sala no está disponible en el horario seleccionado.")
 
     def borrar_seleccionados(self):
         selected_items = self.lista.selection()
@@ -196,11 +205,13 @@ class AgendaTab(ttk.Frame):
     def cargar_datos_en_listado(self, data=None):
         if data is None:
             data = logic.cargar_datos()
+        
         # Limpiar el TreeView
         for item in self.lista.get_children():
             self.lista.delete(item)
 
-            # Insertamos los nuevos datos en el TreeView
+        # Insertar los nuevos datos en el TreeView
         for row in data:
-            self.lista.insert("", "end", values=row)
+            # Omitir el primer elemento (ID) y agregar los demás elementos
+            self.lista.insert("", "end", values=row[1:])  # Aquí omitimos el primer elemento (ID)
 

@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import openpyxl
 
@@ -70,14 +70,6 @@ def cargar_datos():
 
     conn.close()
     return data
-
-# Validar la fecha ingresada
-def validar_fecha(fecha_str):
-    try:
-        fecha = datetime.strptime(fecha_str, '%d/%m/%Y')
-        return True
-    except ValueError:
-        return False
     
 def exportar_a_excel(archivo_excel):
     # Obtener los datos desde la base de datos
@@ -99,3 +91,42 @@ def exportar_a_excel(archivo_excel):
 
     # Guardar el archivo Excel
     wb.save(archivo_excel)
+
+def sala_disponible(sala, fecha, hora_inicio, hora_fin):
+    try:
+        # Obtener el horario y el tiempo de la base de datos
+        conexion = sqlite3.connect("calendario.db")
+        cursor = conexion.cursor()
+        cursor.execute('SELECT horario, tiempo FROM reservas WHERE sala = ? AND fecha = ?', (sala, fecha))
+        datos_reserva = cursor.fetchall()
+        conexion.close()
+
+        for horario_db, tiempo_db in datos_reserva:
+
+            print("++++++++++++: ", horario_db, tiempo_db)
+            
+
+            # Convertir las horas en formato datetime
+            hora_inicio_dt = datetime.strptime(hora_inicio, '%H:%M')
+            hora_fin_dt = datetime.strptime(hora_fin, '%H:%M')
+            hora_inicio_db_dt = datetime.strptime(horario_db, '%H:%M')
+            hora_fin_db_dt = hora_inicio_db_dt + timedelta(hours=int(tiempo_db))
+
+            print("------------: ", hora_inicio_db_dt, hora_fin_db_dt)
+
+            # Comprobar si hay superposición de horarios
+            if (hora_inicio_dt >= hora_inicio_db_dt and hora_inicio_dt < hora_fin_db_dt) or \
+               (hora_inicio_dt < hora_inicio_db_dt and hora_fin_dt > hora_inicio_db_dt):
+                return False # Hay superposición con al menos una reserva
+        else:
+            return True  # No hay reservas previas en esa sala y fecha
+
+    except sqlite3.Error as e:
+        print("Error en la conexión o consulta SQL:", e)
+        return False
+
+def extraer_digito(tiempo):
+
+    primer_caracter = tiempo[0]
+    numero = int(primer_caracter)
+    return numero

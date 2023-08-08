@@ -36,7 +36,7 @@ def main():
 
     # Pestaña Otras Datos
     tab_datos = ttk.Frame(notebook)
-    notebook.add(tab_datos, text="Otros Datos")
+    notebook.add(tab_datos, text="Otros datos")
 
     # Cargar datos desde db
     tab_agenda.cargar_datos_en_listado()
