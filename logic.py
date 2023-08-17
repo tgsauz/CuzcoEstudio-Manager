@@ -24,6 +24,80 @@ def crear_tabla_reservas():
     # Cerrar la conexión con la base de datos
     conexion.close()
 
+def crear_db_tabs():
+    conn = sqlite3.connect("tabs_database.db")
+    cursor = conn.cursor()
+
+    # Crear tabla si no existe
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tabs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tab_name TEXT
+        )
+    """)
+
+    # Crear tabla para consumiciones
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS consumiciones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tab_id INTEGER,
+            nombre TEXT,
+            precio REAL
+        )
+    """)
+
+    conn.commit()
+
+def guardar_tab_en_db(tab_name):
+    conn = sqlite3.connect("tabs_database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("INSERT INTO tabs (tab_name) VALUES (?)", (tab_name,))
+    conn.commit()
+
+    tab_id = cursor.lastrowid  # Obtener el último ID insertado
+    conn.close()
+
+    return tab_id
+
+def guardar_en_consumision_db(tab_id, nombre_consumo, precio_consumo):
+    if tab_id is not None:
+        conn = sqlite3.connect("tabs_database.db")
+        cursor = conn.cursor()
+
+        # Guardar la consumición en la tabla de consumiciones
+        cursor.execute("INSERT INTO consumiciones (tab_id, nombre, precio) VALUES (?, ?, ?)",
+                       (tab_id, nombre_consumo, precio_consumo))
+        conn.commit()
+
+        conn.close()
+
+def borrar_tab_actual_db(tab_id):
+    if tab_id is not None:
+        # Borrar consumiciones asociadas a este tab de la tabla de consumiciones
+        conn = sqlite3.connect("tabs_database.db")
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM consumiciones WHERE tab_id = ?", (tab_id,))
+        conn.commit()
+        conn.close()
+
+def recuperar_tab_de_db(nombre_tab):
+    conn = sqlite3.connect("tabs_database.db")
+    cursor = conn.cursor()
+
+    # Recuperar consumiciones de la base de datos
+    cursor.execute("SELECT nombre, precio FROM consumiciones WHERE tab_id = ?", (nombre_tab,))
+    consumiciones = cursor.fetchall()
+
+    conn.close()
+    return consumiciones
+
+def toggle_mode(mode_switch, style):
+    if mode_switch.instate(["selected"]):
+        style.theme_use("forest-dark")
+    else:
+        style.theme_use("forest-light")
+
 def guardar_reserva(banda, sala, fecha, horario, tiempo, abonado):
     # Configurar la conexión con la base de datos SQLite
     conexion = sqlite3.connect("calendario.db")
@@ -42,25 +116,25 @@ def guardar_reserva(banda, sala, fecha, horario, tiempo, abonado):
     # Retornar el ID de la banda
     return cursor.lastrowid
 
-def borrar_reserva(id_reserva):
+def borrar_reserva_por_datos(banda, sala, fecha, horario):
     try:
         # Configurar la conexión con la base de datos SQLite
-        print(f"Borrando reserva con ID: {id_reserva}")
         conexion = sqlite3.connect("calendario.db")
         cursor = conexion.cursor()
 
-        # Borrar la reserva de la base de datos
-        cursor.execute('DELETE FROM reservas WHERE id = ?', (id_reserva,))
+        # Eliminar la reserva con los valores correspondientes
+        cursor.execute('''
+            DELETE FROM reservas
+            WHERE banda = ? AND sala = ? AND fecha = ? AND horario = ?
+        ''', (banda, sala, fecha, horario))
 
-        # Guardar los cambios en la base de datos y cerrar la conexión
         conexion.commit()
         conexion.close()
-
-    except sqlite3.Error as e:
-        print("Error en la conexión o consulta SQL:", e)
+    except sqlite3.Error as error:
+        print("Error al borrar la reserva:", error)
 
 # Cargar datos desde la base de datos
-def cargar_datos():
+def cargar_datos_bandas():
     conn = sqlite3.connect("calendario.db")
     cursor = conn.cursor()
 
@@ -70,27 +144,6 @@ def cargar_datos():
 
     conn.close()
     return data
-    
-def exportar_a_excel(archivo_excel):
-    # Obtener los datos desde la base de datos
-    data = cargar_datos()
-
-    if not data:
-        return
-
-    if not archivo_excel.endswith('.xlsx'):
-        archivo_excel += '.xlsx'
-
-    # Crear el archivo Excel y agregar los datos
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.append(["Banda", "Sala", "Fecha", "Horario", "Tiempo", "Abonado" ])
-
-    for fila in data:
-        ws.append(fila)
-
-    # Guardar el archivo Excel
-    wb.save(archivo_excel)
 
 def sala_disponible(sala, fecha, hora_inicio, hora_fin):
     try:
