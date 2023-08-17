@@ -84,7 +84,7 @@ class AgendaTab(ttk.Frame):
         treeFrame.place(x=240, y=10, width=470, height=402)
 
         treeScroll = ttk.Scrollbar(treeFrame)
-        treeScroll.pack(side="right", fill="y")
+        treeScroll.pack(side="right", fill="y", expand=True)
         treeFrame.columnconfigure(0, weight=1)
 
         # Frame para el TreeView
@@ -233,8 +233,18 @@ class CalendarioTab(ttk.Frame):
         # Crear calendario
         self.calendario = Calendar(self, locale='es_ES', showweeknumbers=False)
         self.calendario.pack(fill="both", expand=True)
-        self.calendario.bind("<<CalendarSelected>>", self.mostrar_entradas)
+        self.calendario.bind("<<CalendarSelected>>", self.on_calendar_click)
         self.actualizar_calendario()
+        self._last_click_time = 0
+        self._click_interval = 500  # Tiempo en milisegundos para considerar un doble clic
+
+    def on_calendar_click(self, event):
+        current_time = datetime.now().timestamp() * 1000
+        elapsed_time = current_time - self._last_click_time
+        self._last_click_time = current_time
+
+        if elapsed_time < self._click_interval:
+            self.mostrar_entradas(event)
 
     def actualizar_calendario(self):
         data = logic.cargar_datos_bandas()
@@ -273,9 +283,9 @@ class CalendarioTab(ttk.Frame):
                         entrada[1], entrada[2], entrada[3], entrada[4], entrada[5], entrada[6]
                     )
 
-                tk.messagebox.showinfo("Entradas Agendadas", popup_content) # type: ignore
+                messagebox.showinfo("Entradas Agendadas", popup_content)
             else:
-                tk.messagebox.showinfo("Sin Entradas", "No hay entradas agendadas para {}".format(selected_date_str)) # type: ignore
+                messagebox.showinfo("Sin Entradas", "No hay entradas agendadas para {}".format(selected_date_str))
 
 class BandasTab(ttk.Frame):
     def __init__(self, master):
@@ -304,32 +314,38 @@ class BarTab(tk.Frame):
         self.salas = salas + ["Nuevo Individuo"]
         self.closed_tabs = []  # Lista para almacenar los índices de los tabs cerrados
 
-        self.frame_widgets = tk.Frame(self)
-        self.frame_widgets.pack(side="top", fill="x", padx=10, pady=10)
+        self.frame_widgets_bar = tk.Frame(self)
+        self.frame_widgets_bar.pack(side="top", fill="x", padx=10, pady=10)
 
         # Agregar botón para abrir un nuevo tab para un individuo
-        self.nuevo_tab_combobox = ttk.Combobox(self.frame_widgets, values=self.salas)
+        self.nuevo_tab_combobox = ttk.Combobox(self.frame_widgets_bar, values=self.salas)
         self.nuevo_tab_combobox.insert(0, "Seleccionar opcion")
         self.nuevo_tab_combobox.pack(side="left", pady=(10, 0))
 
-        self.confirmar_boton = ttk.Button(self.frame_widgets, text="Agregar nueva hoja", command=self.agregar_tab_widget)
+        self.confirmar_boton = ttk.Button(self.frame_widgets_bar, text="Agregar nueva hoja", command=self.agregar_tab_widget)
         self.confirmar_boton.pack(side="left", padx=10, pady=(10, 0))
 
-        self.notebook_frame = tk.Frame(self)
-        self.notebook_frame.pack(side="top", fill="both", expand=True, padx=10, pady=10)
+        self.notebook_frame_bar = tk.Frame(self)
+        self.notebook_frame_bar.pack(side="top", fill="both", expand=True, padx=10, pady=10)
 
         # Crear el Notebook para las pestañas de salas
-        self.sala_notebook = ttk.Notebook(self.notebook_frame)
+        self.sala_notebook = ttk.Notebook(self.notebook_frame_bar)
         self.sala_notebook.pack(fill="both", expand=True)
 
         # Crear pestañas de salas
         self.salas_tabs = {}  # Diccionario para almacenar las instancias de SalaTab
+
+        self.frame_widgets_bar.configure(bg="white")
+
 
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
         logic.crear_db_tabs()
+
+    def get_frame_widgets(self):
+        return self.frame_widgets_bar
 
     def borrar_tab_sala(self, nombre):  # Definir la función de borrado
         if nombre in self.salas_tabs:
@@ -377,6 +393,7 @@ class SalaTab(tk.Frame):
         self.nombre = nombre
         self.delete_callback = delete_callback
 
+
         print("Creando SalaTab con nombre:", nombre)
 
         self.frame_listbox_sala = tk.Frame(self)
@@ -386,18 +403,18 @@ class SalaTab(tk.Frame):
         self.frame_widgets_sala.pack(side="right", fill="y", padx=10, pady=10)
 
         self.lista_consumos = tk.Listbox(self.frame_listbox_sala, width=70)
-        self.lista_consumos.grid(row=0, column=0)
+        self.lista_consumos.pack(fill="both", padx=10, pady=10)
 
         # Botón para agregar consumo
         self.agregar_button = tk.Button(self.frame_widgets_sala, text="Agregar Consumo", command=self.agregar_consumo_popup)
-        self.agregar_button.grid(row=0, column=1)
+        self.agregar_button.pack(fill="both", padx=10, pady=10)
 
-        self.calcular_button = tk.Button(self.frame_listbox_sala, text="Calcular Total", command=self.calcular_total)
-        self.calcular_button.grid(row=1, column=1)
+        self.calcular_button = tk.Button(self.frame_widgets_sala, text="Calcular Total", command=self.calcular_total)
+        self.calcular_button.pack(fill="both", padx=10, pady=10)
 
         cruz_cierre = tk.Label(self.frame_widgets_sala, text="x", padx=5, cursor="hand2")
         cruz_cierre.bind("<Button-1>", self.borrar_tab_actual)
-        cruz_cierre.grid(row=2, column=1)
+        cruz_cierre.pack(fill="both", padx=10, pady=10)
 
     def agregar_consumo_popup(self):
         popup = tk.Toplevel(self)

@@ -51,6 +51,8 @@ def main():
     tab_agenda = AgendaTab(notebook, tab_bar, notebook, listaSala_combo)
     tab_bandas = BandasTab(notebook)
 
+    tab_bar.configure(bg="white")
+
     tab_agenda.tab_bar_instance = tab_bar
 
     notebook.add(tab_agenda, text="Agenda de bandas")
@@ -61,7 +63,8 @@ def main():
     # Modo oscuro toggle
     style = ttk.Style(frame)
     mode_switch = ttk.Checkbutton(
-        root, text="Dia/Noche", style="Switch",  command=lambda: logic.toggle_mode(mode_switch, style))
+        root, text="Dia/Noche", style="Switch",
+        command=lambda: logic.toggle_mode(mode_switch, style, tab_bar))
     mode_switch.place(x=640, y=7)
 
     # Cargar datos desde db
