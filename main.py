@@ -1,33 +1,18 @@
 import tkinter as tk
 from tkinter import ttk
-from tkinter import messagebox
-import openpyxl
-import os
-from datetime import date
-from tkcalendar import Calendar
-from gui import AgendaTab, CalendarioTab, BandasTab, BarTab  # <--- Agrega ".gui" al inicio de la importación
+from gui import AgendaTab, CalendarioTab, BandasTab, BarTab, WidgetStyleManager  # <--- Agrega ".gui" al inicio de la importación
 import logic
+import gui
 
 listaSala_combo = ["Sala A", "Sala B", "Sala C", "Sala Z", "ESTUDIO"]
+interfaces_to_update = []
 
-#class AppController:
-#    def __init__(self):
-#        self.frames = {}
-#
-#    def add_frame(self, frame_name, frame_instance):
-#        self.frames[frame_name] = frame_instance
-#
-#    def show_frame(self, frame_name):
-#        frame = self.frames.get(frame_name)
-#        if frame:
-#            frame.tkraise()
-
-
+widget_manager = WidgetStyleManager()
 
 def main():
     # Crear la ventana principal
     root = tk.Tk()
-    root.geometry("750x475")
+    root.geometry("750x500")
     root.title('CuzcoManager')
 
     #controller = AppController()
@@ -36,9 +21,11 @@ def main():
     root.tk.call("source", "forest-light.tcl")
     root.tk.call("source", "forest-dark.tcl")
     style.theme_use("forest-light")
+    current_theme = style
 
     # Crear tabla de reservas en la base de datos
     logic.crear_tabla_reservas()
+    logic.crear_db_tabs
 
     # Crear el Notebook para las pestañas
     frame = ttk.Frame(root)
@@ -46,25 +33,32 @@ def main():
     notebook = ttk.Notebook(root)
     notebook.pack(fill="both", expand=True)
 
-    tab_calendario = CalendarioTab(notebook)
-    tab_bar = BarTab(notebook, listaSala_combo)
-    tab_agenda = AgendaTab(notebook, tab_bar, notebook, listaSala_combo)
-    tab_bandas = BandasTab(notebook)
+    tab_calendario = CalendarioTab(notebook, widget_manager)
+    interfaces_to_update.append(tab_calendario)
 
-    tab_bar.configure(bg="white")
+    tab_bar = BarTab(notebook, listaSala_combo, style, widget_manager)
+    interfaces_to_update.append(tab_bar)
 
-    tab_agenda.tab_bar_instance = tab_bar
+    tab_agenda = AgendaTab(notebook, tab_bar, notebook, listaSala_combo, widget_manager)
+    interfaces_to_update.append(tab_agenda)
+
+    tab_bandas = BandasTab(notebook, widget_manager)
+    interfaces_to_update.append(tab_bandas)
 
     notebook.add(tab_agenda, text="Agenda de bandas")
     notebook.add(tab_calendario, text="Calendario")
     notebook.add(tab_bar, text="Bar")
     notebook.add(tab_bandas, text="Bandas")
 
+    widget_manager.add_widget(tab_agenda)
+    widget_manager.add_widget(tab_bandas)
+    widget_manager.add_widget(tab_bar)
+    widget_manager.add_widget(tab_calendario)
+
     # Modo oscuro toggle
-    style = ttk.Style(frame)
     mode_switch = ttk.Checkbutton(
-        root, text="Dia/Noche", style="Switch",
-        command=lambda: logic.toggle_mode(mode_switch, style, tab_bar))
+        root, text="Dia/Noche", style="Switch", 
+        command=lambda: gui.toggle_mode(widget_manager))
     mode_switch.place(x=640, y=7)
 
     # Cargar datos desde db

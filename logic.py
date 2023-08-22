@@ -1,9 +1,5 @@
 import sqlite3
 from datetime import datetime, timedelta
-import os
-import openpyxl
-
-estilo_widgets = []
 
 def crear_tabla_reservas():
     # Configurar la conexión con la base de datos SQLite
@@ -92,20 +88,7 @@ def recuperar_tab_de_db(nombre_tab):
     consumiciones = cursor.fetchall()
 
     conn.close()
-    return consumiciones
-
-def toggle_mode(mode_switch, style, tab_bar):
-    frame_widgets = tab_bar.get_frame_widgets()
-    if mode_switch.instate(["selected"]):
-        style.theme_use("forest-dark")
-        tab_bar.configure(bg="#313131")
-        frame_widgets.configure(bg="#313131")
-        
-    else:
-        style.theme_use("forest-light")
-        tab_bar.configure(bg="white")
-        frame_widgets.configure(bg="white")
-        
+    return consumiciones   
 
 def guardar_reserva(banda, sala, fecha, horario, tiempo, abonado):
     # Configurar la conexión con la base de datos SQLite
