@@ -6,7 +6,6 @@ import os
 from datetime import date, datetime, timedelta
 from tkcalendar import Calendar, DateEntry
 import logic
-from logic import borrar_tab_actual_db
 import sqlite3
 
 consumos = {}
@@ -314,6 +313,9 @@ class BarTab(tk.Frame):
         self.salas = salas + ["Nuevo Individuo"]
         self.closed_tabs = []  # Lista para almacenar los índices de los tabs cerrados
 
+        self.notebook_bar_style = ttk.Style()
+        self.notebook_bar_style.theme_use("forest-light")
+
         self.frame_widgets_bar = tk.Frame(self)
         self.frame_widgets_bar.pack(side="top", fill="x", padx=10, pady=10)
 
@@ -392,34 +394,29 @@ class SalaTab(tk.Frame):
         self.consumos = consumos
         self.nombre = nombre
         self.delete_callback = delete_callback
-
+        self.notebook_sala_style = ttk.Style()
+        self.notebook_sala_style.theme_use("forest-light")
 
         print("Creando SalaTab con nombre:", nombre)
 
-        self.frame_listbox_sala = tk.Frame(self)
-        self.frame_listbox_sala.pack(side="left", fill="y", padx=10, pady=10)
-
-        self.frame_widgets_sala = tk.Frame(self)
-        self.frame_widgets_sala.pack(side="right", fill="y", padx=10, pady=10)
-
-        self.lista_consumos = tk.Listbox(self.frame_listbox_sala, width=70)
-        self.lista_consumos.pack(fill="both", padx=10, pady=10)
+        self.lista_consumos = tk.Listbox(self, width=70, height=15)
+        self.lista_consumos.place(y=20, x=30)
 
         # Botón para agregar consumo
-        self.agregar_button = tk.Button(self.frame_widgets_sala, text="Agregar Consumo", command=self.agregar_consumo_popup)
-        self.agregar_button.pack(fill="both", padx=10, pady=10)
+        self.agregar_button = tk.Button(self, text="Agregar Consumo", command=self.agregar_consumo_popup)
+        self.agregar_button.place(y=20, x=550)
 
-        self.calcular_button = tk.Button(self.frame_widgets_sala, text="Calcular Total", command=self.calcular_total)
-        self.calcular_button.pack(fill="both", padx=10, pady=10)
+        self.calcular_button = tk.Button(self, text="Calcular Total", command=self.calcular_total)
+        self.calcular_button.place(y=60, x=565)
 
-        cruz_cierre = tk.Label(self.frame_widgets_sala, text="x", padx=5, cursor="hand2")
+        cruz_cierre = tk.Label(self, text="X", padx=5, cursor="hand2")
         cruz_cierre.bind("<Button-1>", self.borrar_tab_actual)
-        cruz_cierre.pack(fill="both", padx=10, pady=10)
+        cruz_cierre.place(y=1, x=680)
 
     def agregar_consumo_popup(self):
         popup = tk.Toplevel(self)
         popup.title("Agregar Consumo")
-        popup.geometry("200x200")
+        popup.geometry("200x250")
 
         # Etiqueta y entrada para el nombre del consumo
         nombre_label = tk.Label(popup, text="Nombre del Consumo:")
@@ -433,37 +430,43 @@ class SalaTab(tk.Frame):
         precio_consumo = tk.Entry(popup)
         precio_consumo.pack(padx=10, pady=(0, 10))
 
+        integrante_label = tk.Label(popup, text="Integrante")
+        integrante_label.pack(padx=10, pady=(10, 0))
+        integrante_consumo = tk.Entry(popup)
+        integrante_consumo.pack(padx=10, pady=(0, 10))
+
         # Botón para confirmar la adición del consumo
-        confirm_button = tk.Button(popup, text="Agregar", command=lambda: self.confirmar_agregar_consumo(popup, nombre_consumo.get(), precio_consumo.get()))
+        confirm_button = tk.Button(popup, text="Agregar", command=lambda: self.confirmar_agregar_consumo(popup, integrante_consumo.get(), nombre_consumo.get(), precio_consumo.get()))
         confirm_button.pack(padx=10, pady=20)
 
-    def confirmar_agregar_consumo(self, popup, nombre_consumo, precio_consumo):
-        nombre_consumo = simpledialog.askstring("Agregar Consumo", "Ingresa el nombre del consumo:")
+    def confirmar_agregar_consumo(self, popup, integrante,nombre_consumo, precio_consumo):
         if nombre_consumo:
-            precio_consumo = simpledialog.askinteger("Agregar Consumo", "Ingresa el precio del consumo:")
             if precio_consumo is not None:
-                self.agregar_consumo(nombre_consumo, precio_consumo)
+                self.agregar_consumo(integrante, nombre_consumo, precio_consumo)
 
-    def agregar_consumo(self, nombre, precio):
-        self.consumos[nombre] = precio
+    def agregar_consumo(self, integrante, nombre_consumo, precio):
+        clave = (nombre_consumo, integrante)
+        self.consumos[clave] = precio
         self.actualizar_lista_consumos()
 
-    def actualizar_precio(self, nombre, precio):
-        if nombre in self.consumos:
-            self.consumos[nombre] = precio
+    def actualizar_precio(self, integrante, nombre_consumo, precio):
+        clave = (nombre_consumo, integrante)
+        if clave in self.consumos:
+            self.consumos[clave] = precio
 
-    def eliminar_consumo(self, nombre):
-        if nombre in self.consumos:
-            del self.consumos[nombre]
+    def eliminar_consumo(self, integrante, nombre_consumo):
+        clave = (nombre_consumo, integrante)
+        if clave in self.consumos:
+            del self.consumos[clave]
 
     def actualizar_lista_consumos(self):
         self.lista_consumos.delete(0, tk.END)
-        for nombre, precio in self.consumos.items():
-            self.lista_consumos.insert(tk.END, f"{nombre}: {precio:.2f}")
+        for (nombre_consumo, integrante), precio in self.consumos.items():
+            self.lista_consumos.insert(tk.END, f"{integrante}: {nombre_consumo} - {precio}")
 
     def calcular_total(self):
-        total = sum(self.consumos.values())
-        messagebox.showinfo("Total de Consumos", f"El total de consumos es: {total:.2f}")
+        total = sum(int(precio) for precio in self.consumos.values())
+        messagebox.showinfo("Total de Consumos", f"El total de consumos es: {total}")
 
     def borrar_tab_actual(self, event):
         print("Intentando borrar el tab con nombre:", self.nombre)

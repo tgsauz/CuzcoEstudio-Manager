@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 import os
 import openpyxl
 
+estilo_widgets = []
+
 def crear_tabla_reservas():
     # Configurar la conexión con la base de datos SQLite
     conexion = sqlite3.connect("calendario.db")
@@ -98,6 +100,7 @@ def toggle_mode(mode_switch, style, tab_bar):
         style.theme_use("forest-dark")
         tab_bar.configure(bg="#313131")
         frame_widgets.configure(bg="#313131")
+        
     else:
         style.theme_use("forest-light")
         tab_bar.configure(bg="white")
