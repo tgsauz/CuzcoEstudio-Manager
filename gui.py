@@ -472,10 +472,10 @@ class SalaTab(tk.Frame):
         integrante_consumo.pack(padx=10, pady=(0, 10))
 
         # Botón para confirmar la adición del consumo
-        confirm_button = tk.Button(popup, text="Agregar", command=lambda: self.confirmar_agregar_consumo(popup, integrante_consumo.get(), nombre_consumo.get(), precio_consumo.get()))
+        confirm_button = tk.Button(popup, text="Agregar", command=lambda: self.confirmar_agregar_consumo(integrante_consumo.get(), nombre_consumo.get(), precio_consumo.get()))
         confirm_button.pack(padx=10, pady=20)
 
-    def confirmar_agregar_consumo(self, popup, integrante,nombre_consumo, precio_consumo):
+    def confirmar_agregar_consumo(self, integrante,nombre_consumo, precio_consumo):
         if nombre_consumo:
             if precio_consumo is not None:
                 self.agregar_consumo(integrante, nombre_consumo, precio_consumo)

@@ -1,6 +1,21 @@
 import sqlite3
 from datetime import datetime, timedelta
 
+class Banda:
+    def __init__(self, nombre):
+        self.nombre = nombre
+        self.miembros = []
+        self.deudas = {}
+
+    def agregar_miembro(self, miembro):
+        self.miembros.append(miembro)
+
+    def registrar_deuda(self, miembro, cantidad):
+        self.deudas[miembro] = cantidad
+
+    def __str__(self):
+        return f"Banda: {self.nombre}, Miembros: {', '.join(self.miembros)}, Deudas: {self.deudas}"
+
 def crear_tabla_reservas():
     # Configurar la conexión con la base de datos SQLite
     conexion = sqlite3.connect("calendario.db")
