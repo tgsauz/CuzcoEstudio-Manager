@@ -52,17 +52,17 @@ class CalendarioComp(ttk.Frame):
     def mostrar_entradas(self, event):
         selected_date = self.calendario.selection_get()
         if selected_date is not None:
-            selected_date_str = selected_date.strftime("%Y-%m-%d")
+            selected_date_str = selected_date.strftime("%d-%m-%Y")
             data = logic.cargar_datos_reservas(self.ruta_base_datos_reservas)
             entradas_seleccionadas = [tupla for tupla in data if tupla[3] == selected_date_str]
 
             if entradas_seleccionadas:
                 popup_content = "Entradas agendadas para {}:\n\n".format(selected_date_str)
                 for entrada in entradas_seleccionadas:
-                    popup_content += "Banda: {}\nSala: {}\nFecha: {}\nHorario: {}\nHR/s: {}\nAbonado: {}\n\n".format(
-                        entrada[1], entrada[2], entrada[3], entrada[4], entrada[5], entrada[6]
+                    popup_content += "Banda: {}\nSala: {}\nFecha: {}\nHorario: {}\nHR/s: {}\n\n".format(
+                        entrada[1], entrada[2], entrada[3], entrada[4], entrada[5]
                     )
 
                 messagebox.showinfo("Entradas Agendadas", popup_content)
             else:
-                messagebox.showinfo("Sin Entradas", "No hay entradas agendadas para {}".format(selected_date_str))
+                messagebox.showinfo("Sin entradas", "No hay entradas agendadas para {}".format(selected_date_str))
