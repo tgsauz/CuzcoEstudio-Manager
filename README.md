@@ -1,2 +1,2 @@
-Agenda application with DB for importante dates and expenses. 
-Utilizing tkcalendar, tkinter and MySQLite
+Agenda application with DB for important dates, expenses, and consumptions. 
+Utilizing tkinter, and MySQLite3
