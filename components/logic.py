@@ -2,7 +2,8 @@ import sqlite3
 import os
 import uuid
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from tkinter import messagebox
 
 class Banda:
     def __init__(self, nombre):
@@ -45,7 +46,6 @@ def crear_bandas_db(ruta_base_datos_bandas):
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS miembros (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
             banda_id INTEGER,
             nombre TEXT NOT NULL,
             FOREIGN KEY (banda_id) REFERENCES bandas(id)
@@ -54,7 +54,6 @@ def crear_bandas_db(ruta_base_datos_bandas):
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS deudas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
             miembro_id INTEGER,
             cantidad REAL NOT NULL,
             FOREIGN KEY (miembro_id) REFERENCES miembros(id)
@@ -63,7 +62,7 @@ def crear_bandas_db(ruta_base_datos_bandas):
 
     conexion.commit()   
 
-def guardar_reserva(ruta_base_datos_reservas): #Agregar datos_a_guardar[]
+def guardar_reserva(ruta_base_datos_reservas, banda, sala, fecha, horario, tiempo): #Agregar datos_a_guardar[]
 
     conexion = sqlite3.connect(ruta_base_datos_reservas)
     cursor = conexion.cursor()
@@ -72,7 +71,7 @@ def guardar_reserva(ruta_base_datos_reservas): #Agregar datos_a_guardar[]
     cursor.execute('''
         INSERT INTO reservas (banda, sala, fecha, horario, tiempo, id)
         VALUES (?, ?, ?, ?, ?, ?)
-    ''', (id)) #Agregar datos_a_guardar[] = contenido de los datos
+    ''', (banda, sala, fecha, horario, tiempo, id)) #Agregar datos_a_guardar[] = contenido de los datos
 
     conexion.commit()
     conexion.close()
@@ -104,7 +103,7 @@ def cargar_datos_reservas(ruta_base_datos_reservas):
     cursor = conexion.cursor()
 
     # Obtener todos los datos de la tabla de bandas
-    cursor.execute("SELECT id, banda, sala, fecha, horario, tiempo FROM reservas")
+    cursor.execute("SELECT banda, sala, fecha, horario, tiempo FROM reservas")
     data = cursor.fetchall()
 
     conexion.close()
@@ -145,7 +144,61 @@ def sala_disponible(sala, fecha, hora_inicio, hora_fin, ruta_base_datos_reservas
         return False
 
 def extraer_digito(tiempo):
+    return int(tiempo[0])
 
-    primer_caracter = tiempo[0]
-    numero = int(primer_caracter)
-    return numero
+##
+def agregar_a_calendario(self, ruta_base_datos_reservas):
+    # Obtener los datos ingresados en los widgets
+    banda = self.entry_name.get()
+    sala = self.sala_combobox.get()
+    fecha = self.selected_date
+    horario = self.hour_spinbox.get()
+    tiempo = self.time_combobox.get()
+
+    # Validar que el nombre de la banda y la sala hayan sido ingresados
+    if not banda or banda == "Nombre de la banda":
+        messagebox.showerror("Error", "Por favor, ingresa el nombre de la banda.")
+        return
+
+    if not sala or sala == "Seleccionar SALA":
+        messagebox.showerror("Error", "Por favor, selecciona una sala.")
+        return
+
+    if not horario or horario == "Horario":
+        messagebox.showerror("Error", "Por favor, ingresa un horario.")
+        return
+
+    if not tiempo or tiempo == "Seleccionar tiempo":
+        messagebox.showerror("Error", "Por favor, selecciona un tiempo.")
+        return
+
+    # Obtener las horas y minutos del tiempo seleccionado
+    if "horas" in tiempo:
+        tiempo = tiempo.replace(' horas', '')
+    else:
+        tiempo = tiempo.replace(' hora', '')
+
+    # Calcular el horario de fin de la reserva
+    digitoAux = extraer_digito(tiempo)
+    minutos = digitoAux * 60
+    hora_inicio_reserva = datetime.strptime(horario, "%H:%M")
+    hora_fin_reserva = hora_inicio_reserva + timedelta(minutes=minutos)
+
+    print("Pre DEF, FIN RESERVA: ", hora_fin_reserva, "INI RESERVA: ", hora_inicio_reserva)
+
+    # Validar si la sala está disponible en el horario seleccionado
+    if sala_disponible(sala, fecha, hora_inicio_reserva.strftime("%H:%M"), hora_fin_reserva.strftime("%H:%M"), ruta_base_datos_reservas):
+        # Guardar los datos en el hoja de cálculo
+        guardar_reserva(ruta_base_datos_reservas, banda, sala, fecha, horario, tiempo)
+
+        # Finalmente, limpiar los widgets para el siguiente ingreso
+        self.entry_name.delete(0, "end")
+        self.sala_combobox.set("Seleccionar SALA")
+        self.hour_spinbox.delete(0, "end")
+        self.time_combobox.set("Seleccionar tiempo")  # Limpiar el combobox de tiempo
+
+        # Después de agregar la entrada, cargar nuevamente los datos para actualizar el widget de lista
+        self.cargar_datos_en_listado()
+
+    else:
+        messagebox.showerror("Error", "La sala no está disponible en el horario seleccionado.")

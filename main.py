@@ -42,19 +42,19 @@ crear_bandas_db(ruta_base_datos_bandas)
 
 notebook = ttk.Notebook(root)
 
-mes_frame = tk.Frame(notebook)
-semana_frame = tk.Frame(notebook)
-dia_frame = tk.Frame(notebook)
+calendario_frame = ttk.Frame(notebook)
+bar_frame = tk.Frame(notebook)
+expensas_frame = ttk.Frame(notebook)
 
-notebook.add(mes_frame, text='Mes')
-notebook.add(semana_frame, text='Semana')
-notebook.add(dia_frame, text='Dia')
+notebook.add(calendario_frame, text='Calendario')
+notebook.add(bar_frame, text='Bar')
+notebook.add(expensas_frame, text='Expensas')
 
 notebook.pack(fill='both', expand=True)
 
 notebook.bind("<<NotebookTabChanged>>", change_view)
 
-calendario_mes_frame = calendario_comp(mes_frame, style)
-calendario_mes_frame.pack(fill="both", expand=True)
+calendario_frame_content = calendario_comp(calendario_frame, style)
+calendario_frame_content.pack(fill="both", expand=True)
 
 root.mainloop()
