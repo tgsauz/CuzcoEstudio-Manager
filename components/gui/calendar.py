@@ -1,13 +1,14 @@
-from tkinter import ttk, messagebox
+from tkinter import ttk
 from datetime import datetime
 from tkcalendar import Calendar
-from ..logic import cargar_datos_reservas
+from ..logic import recuperar_datos_reservas
 from ..config import get_rutas
 from .agenda import AgendaWindow
 
 class CalendarioComp(ttk.Frame):
     def __init__(self, parent, style):
         ttk.Frame.__init__(self, parent)
+
         self.ruta_base_datos_reservas, _ = get_rutas()
         self.style = style
 
@@ -26,10 +27,10 @@ class CalendarioComp(ttk.Frame):
         self._last_click_time = current_time
 
         if elapsed_time < self._click_interval:
-            self.mostrar_entradas(event, self.style)
+            self.mostrar_entradas(self.style)
 
     def actualizar_calendario(self, ruta_base_datos_reservas):
-        data = cargar_datos_reservas(ruta_base_datos_reservas)
+        data = recuperar_datos_reservas(ruta_base_datos_reservas)
 
         for event in self.calendario.get_calevents():
             self.calendario.calevent_remove(event)
@@ -50,11 +51,11 @@ class CalendarioComp(ttk.Frame):
                 "marcada",
             )
 
-    def mostrar_entradas(self, event, style):
+    def mostrar_entradas(self, style):
         selected_date = self.calendario.selection_get()
         if selected_date is not None:
             selected_date_str = selected_date.strftime("%Y-%m-%d")
-            data = cargar_datos_reservas(self.ruta_base_datos_reservas)
+            data = recuperar_datos_reservas(self.ruta_base_datos_reservas)
             entradas_seleccionadas = [tupla for tupla in data if tupla[2] == selected_date_str]
 
             agenda_window = AgendaWindow(self.master, selected_date, entradas_seleccionadas, style, self.ruta_base_datos_reservas)

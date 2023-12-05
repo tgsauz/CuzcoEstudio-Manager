@@ -33,7 +33,7 @@ def crear_tabla_reservas(ruta_base_datos_reservas):
             fecha TEXT NOT NULL,
             horario TEXT NOT NULL,
             tiempo TEXT NOT NULL,
-            id TEXT PRIMARY KEY
+            id TEXT NOT NULL
         )
     ''')
 
@@ -45,18 +45,29 @@ def crear_bandas_db(ruta_base_datos_bandas):
     cursor = conexion.cursor()
 
     cursor.execute('''
+        CREATE TABLE IF NOT EXISTS bandas(
+            banda_id TEXT NOT NULL,
+            banda_name TEXT NOT NULL
+        )
+    ''')
+
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS miembros (
-            banda_id INTEGER,
+            miembro_id TEXT NOT NULL,
+            id_banda_miembro TEXT NOT NULL,
             nombre TEXT NOT NULL,
-            FOREIGN KEY (banda_id) REFERENCES bandas(id)
+            dni TEXT NOT NULL,
+            celular TEXT NOT NULL,
+            FOREIGN KEY (id_banda_miembro) REFERENCES bandas(banda_id)
         )
     ''')
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS deudas (
-            miembro_id INTEGER,
+            id_miembro_deuda TET NOT NULL,
             cantidad REAL NOT NULL,
-            FOREIGN KEY (miembro_id) REFERENCES miembros(id)
+            deuda_id 
+            FOREIGN KEY (id_miembro_deuda) REFERENCES miembros(miembro_id)
         )
     ''')
 
@@ -67,19 +78,17 @@ def guardar_reserva(ruta_base_datos_reservas, banda, sala, fecha, horario, tiemp
     conexion = sqlite3.connect(ruta_base_datos_reservas)
     cursor = conexion.cursor()
     id = str(uuid.uuid4())
+    horario_str = horario.strftime("%H:%M")
 
     cursor.execute('''
         INSERT INTO reservas (banda, sala, fecha, horario, tiempo, id)
         VALUES (?, ?, ?, ?, ?, ?)
-    ''', (banda, sala, fecha, horario, tiempo, id)) #Agregar datos_a_guardar[] = contenido de los datos
+    ''', (banda, sala, fecha, horario_str, tiempo, id)) #Agregar datos_a_guardar[] = contenido de los datos
 
     conexion.commit()
     conexion.close()
 
-    # Retornar el ID de la banda
-    # return cursor.lastrowid
-
-def borrar_reserva_por_datos(id, ruta_base_datos_reservas):
+def borrar_reserva_por_id(id_reserva, ruta_base_datos_reservas):
 
     try:
         conexion = sqlite3.connect(ruta_base_datos_reservas)
@@ -89,7 +98,7 @@ def borrar_reserva_por_datos(id, ruta_base_datos_reservas):
         cursor.execute('''
             DELETE FROM reservas
             WHERE id = ?
-        ''', (id))
+        ''', (id_reserva,))
 
         conexion.commit()
         conexion.close()
@@ -98,12 +107,12 @@ def borrar_reserva_por_datos(id, ruta_base_datos_reservas):
         print("Error al borrar la reserva:", error)
 
 # Cargar datos desde la base de datos
-def cargar_datos_reservas(ruta_base_datos_reservas):
+def recuperar_datos_reservas(ruta_base_datos_reservas):
     conexion = sqlite3.connect(ruta_base_datos_reservas)
     cursor = conexion.cursor()
 
     # Obtener todos los datos de la tabla de bandas
-    cursor.execute("SELECT banda, sala, fecha, horario, tiempo FROM reservas")
+    cursor.execute("SELECT banda, sala, fecha, horario, tiempo, id FROM reservas")
     data = cursor.fetchall()
 
     conexion.close()
@@ -119,18 +128,13 @@ def sala_disponible(sala, fecha, hora_inicio, hora_fin, ruta_base_datos_reservas
         datos_reserva = cursor.fetchall()
         conexion.close()
 
-        for horario_db, tiempo_db in datos_reserva:
-
-            print("++++++++++++: ", horario_db, tiempo_db)
-            
+        for horario_db, tiempo_db in datos_reserva:            
 
             # Convertir las horas en formato datetime
             hora_inicio_dt = datetime.strptime(hora_inicio, '%H:%M')
             hora_fin_dt = datetime.strptime(hora_fin, '%H:%M')
             hora_inicio_db_dt = datetime.strptime(horario_db, '%H:%M')
             hora_fin_db_dt = hora_inicio_db_dt + timedelta(hours=int(tiempo_db))
-
-            print("------------: ", hora_inicio_db_dt, hora_fin_db_dt)
 
             # Comprobar si hay superposición de horarios
             if (hora_inicio_dt >= hora_inicio_db_dt and hora_inicio_dt < hora_fin_db_dt) or \
@@ -145,60 +149,3 @@ def sala_disponible(sala, fecha, hora_inicio, hora_fin, ruta_base_datos_reservas
 
 def extraer_digito(tiempo):
     return int(tiempo[0])
-
-##
-def agregar_a_calendario(self, ruta_base_datos_reservas):
-    # Obtener los datos ingresados en los widgets
-    banda = self.entry_name.get()
-    sala = self.sala_combobox.get()
-    fecha = self.selected_date
-    horario = self.hour_spinbox.get()
-    tiempo = self.time_combobox.get()
-
-    # Validar que el nombre de la banda y la sala hayan sido ingresados
-    if not banda or banda == "Nombre de la banda":
-        messagebox.showerror("Error", "Por favor, ingresa el nombre de la banda.")
-        return
-
-    if not sala or sala == "Seleccionar SALA":
-        messagebox.showerror("Error", "Por favor, selecciona una sala.")
-        return
-
-    if not horario or horario == "Horario":
-        messagebox.showerror("Error", "Por favor, ingresa un horario.")
-        return
-
-    if not tiempo or tiempo == "Seleccionar tiempo":
-        messagebox.showerror("Error", "Por favor, selecciona un tiempo.")
-        return
-
-    # Obtener las horas y minutos del tiempo seleccionado
-    if "horas" in tiempo:
-        tiempo = tiempo.replace(' horas', '')
-    else:
-        tiempo = tiempo.replace(' hora', '')
-
-    # Calcular el horario de fin de la reserva
-    digitoAux = extraer_digito(tiempo)
-    minutos = digitoAux * 60
-    hora_inicio_reserva = datetime.strptime(horario, "%H:%M")
-    hora_fin_reserva = hora_inicio_reserva + timedelta(minutes=minutos)
-
-    print("Pre DEF, FIN RESERVA: ", hora_fin_reserva, "INI RESERVA: ", hora_inicio_reserva)
-
-    # Validar si la sala está disponible en el horario seleccionado
-    if sala_disponible(sala, fecha, hora_inicio_reserva.strftime("%H:%M"), hora_fin_reserva.strftime("%H:%M"), ruta_base_datos_reservas):
-        # Guardar los datos en el hoja de cálculo
-        guardar_reserva(ruta_base_datos_reservas, banda, sala, fecha, horario, tiempo)
-
-        # Finalmente, limpiar los widgets para el siguiente ingreso
-        self.entry_name.delete(0, "end")
-        self.sala_combobox.set("Seleccionar SALA")
-        self.hour_spinbox.delete(0, "end")
-        self.time_combobox.set("Seleccionar tiempo")  # Limpiar el combobox de tiempo
-
-        # Después de agregar la entrada, cargar nuevamente los datos para actualizar el widget de lista
-        self.cargar_datos_en_listado()
-
-    else:
-        messagebox.showerror("Error", "La sala no está disponible en el horario seleccionado.")

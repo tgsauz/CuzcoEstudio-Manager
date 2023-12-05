@@ -4,6 +4,7 @@ import sys
 sys.path.append('../components/')
 
 from components.gui.calendar import CalendarioComp
+from components.gui.bar import BarComp
 from components.logic import crear_tabla_reservas, crear_bandas_db
 from components.config import set_rutas
 
@@ -14,6 +15,7 @@ def change_view(event):
     selected_tab = notebook.index(notebook.select())
 
 calendario_comp = CalendarioComp
+bar_comp = BarComp
 
 # Crear la ventana principal
 root = tk.Tk()
@@ -26,7 +28,7 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 root.tk.call("source", (os.path.join(current_directory, "styles", "forest-dark.tcl")))
 root.tk.call("source", (os.path.join(current_directory, "styles", "forest-light.tcl")))
 
-style.theme_use("forest-light")
+style.theme_use("forest-dark")
 
 ruta_carpeta_data = os.path.join(current_directory, 'components', 'data')
 if not os.path.exists(ruta_carpeta_data):
@@ -56,5 +58,8 @@ notebook.bind("<<NotebookTabChanged>>", change_view)
 
 calendario_frame_content = calendario_comp(calendario_frame, style)
 calendario_frame_content.pack(fill="both", expand=True)
+
+bar_frame_content = bar_comp(bar_frame, style)
+bar_frame_content.pack(fill="both", expand=True)
 
 root.mainloop()
