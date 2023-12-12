@@ -11,7 +11,6 @@ class AgendaWindow(tk.Toplevel):
         super().__init__(parent)
         self.ruta_base_datos_reservas = ruta_base_datos_reservas
         self.style = style
-        self.entry_form = None
         self.title(f"Reservas del dia: {selected_date.strftime('%d-%m-%Y')}")
         
         self.selected_date = selected_date
@@ -20,7 +19,7 @@ class AgendaWindow(tk.Toplevel):
         self.agenda_tree_frame = ttk.Frame(self)
         self.agenda_tree_frame.pack(side=tk.LEFT, fill="both", expand=True)
 
-        self.agenda_tree = ttk.Treeview(self.agenda_tree_frame)
+        self.agenda_tree = ttk.Treeview(self.agenda_tree_frame, show='headings')
         self.agenda_tree['columns'] = ('Banda', 'Sala', 'Horario', 'HR/s')
 
         self.agenda_tree.heading('#0', text='ID')
@@ -28,7 +27,6 @@ class AgendaWindow(tk.Toplevel):
         self.agenda_tree.heading('Sala', text='Sala')
         self.agenda_tree.heading('Horario', text='Horario')
         self.agenda_tree.heading('HR/s', text='HR/s')
-        self.agenda_tree.pack(fill="both", expand=True)
         self.mostrar_datos_agenda(data, selected_date)
         self.agenda_tree.column('#0', width=0, stretch=tk.NO)
 
@@ -36,6 +34,8 @@ class AgendaWindow(tk.Toplevel):
             self.agenda_tree.heading(col, text=col, anchor=tk.CENTER)
             self.agenda_tree.column(col, anchor=tk.CENTER)
             self.agenda_tree.column(col, anchor=tk.CENTER, width=Font().measure(col + 'WW'))
+
+        self.agenda_tree.pack(fill="both", expand=True)
 
         self.buttons_frame = ttk.Frame(self)
         self.buttons_frame.pack(fill="both", expand=True)
@@ -146,8 +146,7 @@ class AgendaWindow(tk.Toplevel):
             messagebox.showinfo("Advertencia", "Por favor, selecciona al menos una entrada para borrar.")
             return
 
-        # Preguntar al usuario si realmente quiere borrar las entradas seleccionadas
-        confirmacion = messagebox.askyesno("Confirmar", "¿Estás seguro de que quieres borrar las entradas seleccionadas?")
+        confirmacion = messagebox.askyesno("Eliminar entrada", "¿Estás seguro de que quieres borrar las entradas seleccionadas?")
         if not confirmacion:
             return
 
@@ -156,5 +155,5 @@ class AgendaWindow(tk.Toplevel):
             id_reserva = self.agenda_tree.item(item, 'values')[-1]
             print(id_reserva)
             
-            self.agenda_tree.delete(item)  # Eliminar del TreeView
-            borrar_reserva_por_id(id_reserva, ruta_base_datos_reservas)  # Eliminar de la base de datos
+            self.agenda_tree.delete(item)
+            borrar_reserva_por_id(id_reserva, ruta_base_datos_reservas)

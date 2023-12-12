@@ -9,7 +9,7 @@ class CalendarioComp(ttk.Frame):
     def __init__(self, parent, style):
         ttk.Frame.__init__(self, parent)
 
-        self.ruta_base_datos_reservas, _ = get_rutas()
+        self.ruta_base_datos_reservas, _, _ = get_rutas()
         self.style = style
 
         # Crear calendario

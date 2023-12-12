@@ -1,9 +1,7 @@
 import sqlite3
-import os
 import uuid
 
-from datetime import date, datetime, timedelta
-from tkinter import messagebox
+from datetime import datetime, timedelta
 
 class Banda:
     def __init__(self, nombre):
@@ -41,39 +39,72 @@ def crear_tabla_reservas(ruta_base_datos_reservas):
     conexion.close()
 
 def crear_bandas_db(ruta_base_datos_bandas):
+
     conexion = sqlite3.connect(ruta_base_datos_bandas)
     cursor = conexion.cursor()
 
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS bandas(
+        CREATE TABLE IF NOT EXISTS Bandas(
             banda_id TEXT NOT NULL,
             banda_name TEXT NOT NULL
         )
     ''')
 
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS miembros (
+        CREATE TABLE IF NOT EXISTS Miembros (
             miembro_id TEXT NOT NULL,
             id_banda_miembro TEXT NOT NULL,
             nombre TEXT NOT NULL,
             dni TEXT NOT NULL,
             celular TEXT NOT NULL,
-            FOREIGN KEY (id_banda_miembro) REFERENCES bandas(banda_id)
+            FOREIGN KEY (id_banda_miembro) REFERENCES Bandas(banda_id)
         )
     ''')
 
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS deudas (
-            id_miembro_deuda TET NOT NULL,
+        CREATE TABLE IF NOT EXISTS Deudas (
+            id_miembro_deuda TEXT NOT NULL,
             cantidad REAL NOT NULL,
-            deuda_id 
-            FOREIGN KEY (id_miembro_deuda) REFERENCES miembros(miembro_id)
+            deuda_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            FOREIGN KEY (id_miembro_deuda) REFERENCES Miembros(miembro_id)
         )
     ''')
 
-    conexion.commit()   
+    conexion.commit()
+    conexion.close()
 
-def guardar_reserva(ruta_base_datos_reservas, banda, sala, fecha, horario, tiempo): #Agregar datos_a_guardar[]
+def crear_consumo_db(ruta_base_datos_consumos_listado):
+    conexion = sqlite3.connect(ruta_base_datos_consumos_listado)
+    cursor = conexion.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Consumos (
+            producto TEXT NOT NULL,
+            cantidad INTEGER NOT NULL,
+            precio REAL NOT NULL
+        )
+    ''')
+    conexion.commit()
+    conexion.close()
+
+def guardar_consumo(ruta_base_datos_consumos_listado, producto, cantidad, precio):
+    conexion = sqlite3.connect(ruta_base_datos_consumos_listado)
+    cursor = conexion.cursor()
+    cursor.execute('''
+        INSERT INTO Consumos (producto, cantidad, precio)
+        VALUES (?, ?, ?)
+    ''', (producto, cantidad, precio))
+    conexion.commit()
+    conexion.close()
+
+def recuperar_consumos(ruta_base_datos_consumos_listado):
+    conexion = sqlite3.connect(ruta_base_datos_consumos_listado)
+    cursor = conexion.cursor()
+    cursor.execute("SELECT producto, cantidad, precio FROM Consumos")
+    data = cursor.fetchall()
+    conexion.close()
+    return data
+
+def guardar_reserva(ruta_base_datos_reservas, banda, sala, fecha, horario, tiempo):
 
     conexion = sqlite3.connect(ruta_base_datos_reservas)
     cursor = conexion.cursor()
@@ -83,7 +114,7 @@ def guardar_reserva(ruta_base_datos_reservas, banda, sala, fecha, horario, tiemp
     cursor.execute('''
         INSERT INTO reservas (banda, sala, fecha, horario, tiempo, id)
         VALUES (?, ?, ?, ?, ?, ?)
-    ''', (banda, sala, fecha, horario_str, tiempo, id)) #Agregar datos_a_guardar[] = contenido de los datos
+    ''', (banda, sala, fecha, horario_str, tiempo, id))
 
     conexion.commit()
     conexion.close()
@@ -106,7 +137,6 @@ def borrar_reserva_por_id(id_reserva, ruta_base_datos_reservas):
     except sqlite3.Error as error:
         print("Error al borrar la reserva:", error)
 
-# Cargar datos desde la base de datos
 def recuperar_datos_reservas(ruta_base_datos_reservas):
     conexion = sqlite3.connect(ruta_base_datos_reservas)
     cursor = conexion.cursor()
