@@ -130,3 +130,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+consumos_listado.db
+components/data/bandas_info.db
