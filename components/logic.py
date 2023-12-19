@@ -3,21 +3,6 @@ import uuid
 
 from datetime import datetime, timedelta
 
-class Banda:
-    def __init__(self, nombre):
-        self.nombre = nombre
-        self.miembros = []
-        self.deudas = {}
-
-    def agregar_miembro(self, miembro):
-        self.miembros.append(miembro)
-
-    def registrar_deuda(self, miembro, cantidad):
-        self.deudas[miembro] = cantidad
-
-    def __str__(self):
-        return f"Banda: {self.nombre}, Miembros: {', '.join(self.miembros)}, Deudas: {self.deudas}"
-
 def crear_tabla_reservas(ruta_base_datos_reservas):
     # Configurar la conexión con la base de datos SQLite
     conexion = sqlite3.connect(ruta_base_datos_reservas)
@@ -80,7 +65,8 @@ def crear_consumo_db(ruta_base_datos_consumos_listado):
         CREATE TABLE IF NOT EXISTS Consumos (
             producto TEXT NOT NULL,
             cantidad INTEGER NOT NULL,
-            precio REAL NOT NULL
+            precio INTEGER NOT NULL,
+            id INTEGER PRIMARY KEY AUTOINCREMENT
         )
     ''')
     conexion.commit()
@@ -96,11 +82,30 @@ def guardar_consumo(ruta_base_datos_consumos_listado, producto, cantidad, precio
     conexion.commit()
     conexion.close()
 
+def borrar_consumo(ruta_base_datos_consumos_listado, valores):
+    conexion = sqlite3.connect(ruta_base_datos_consumos_listado)
+    cursor = conexion.cursor()
+    cursor.execute("DELETE FROM Consumos WHERE producto = ?", (valores[0],))
+    conexion.commit()
+    conexion.close()
+
+    #Hay que agregar esta funcion a ConsummosWindow
+    #IMPORTANTE
+    #Es necesario que en caso de q haya 2 productos con el mismo nombre, borre el consumo seleccionado y no otro random
+
 def recuperar_consumos(ruta_base_datos_consumos_listado):
     conexion = sqlite3.connect(ruta_base_datos_consumos_listado)
     cursor = conexion.cursor()
     cursor.execute("SELECT producto, cantidad, precio FROM Consumos")
     data = cursor.fetchall()
+    conexion.close()
+    return data
+
+def encontrar_consumo(ruta_base_datos_consumos_listado, producto, cantidad, precio):
+    conexion = sqlite3.connect(ruta_base_datos_consumos_listado)
+    cursor = conexion.cursor()
+    cursor.execute("SELECT producto, cantidad, precio FROM Consumos WHERE producto = ?, cantidad = ?, precio = ?", (producto, cantidad, precio))
+    data = cursor.fetchone()
     conexion.close()
     return data
 
@@ -179,3 +184,58 @@ def sala_disponible(sala, fecha, hora_inicio, hora_fin, ruta_base_datos_reservas
 
 def extraer_digito(tiempo):
     return int(tiempo[0])
+
+def agregar_consumo_gasto(ruta_base_datos_consumos_listado, producto_name, cantidad):
+
+    conexion = sqlite3.connect(ruta_base_datos_consumos_listado)
+    cursor = conexion.cursor()
+    
+    try:
+        cursor.execute("SELECT producto, id FROM Consumos WHERE producto = ?", (producto_name,))
+        resultado = cursor.fetchone()
+        if not resultado[0]:
+            error = f"El producto {producto_name} no existe en la base de datos."
+            return error
+        if not resultado[1] or resultado[1] == 0:
+            error = f"No se posee stock del producto {producto_name} en la base de datos."
+            return error
+        
+        cursor.execute("UPDATE Consumos SET cantidad = cantidad - ? WHERE id = ?", (cantidad, resultado[1]))
+        conexion.commit()
+
+
+    except Exception as e:
+        print(f"Error al agregar el consumo: {e}")
+
+    finally:
+        conexion.close()
+
+def sustraer_consumo_gasto(ruta_base_datos_consumos_listado, valores):
+
+
+    print(valores)
+    # Conectar a la base de datos
+    conexion = sqlite3.connect(ruta_base_datos_consumos_listado)
+    cursor = conexion.cursor()
+
+    try:
+        # Obtener el ID del consumo seleccionado
+        cursor.execute("SELECT id FROM Consumos WHERE producto = ?", (valores[0],))
+        resultado = cursor.fetchone()
+        if not resultado:
+            error = f"El producto {valores[0]} no existe en la base de datos."
+            return error
+
+        consumo_id = resultado[0]
+
+        # Actualizar la cantidad en la base de datos
+        cursor.execute("UPDATE Consumos SET cantidad = cantidad + ? WHERE id = ?", (valores[1], consumo_id))
+        conexion.commit()
+
+    except Exception as e:
+        print(f"Error al eliminar el consumo: {e}")
+        return 0
+
+    finally:
+        conexion.close()
+        return 1

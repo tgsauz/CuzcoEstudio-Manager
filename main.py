@@ -50,7 +50,7 @@ expensas_frame = ttk.Frame(notebook)
 calendario_frame_content = calendario_comp(calendario_frame, style)
 calendario_frame_content.pack(fill="both", expand=True)
 
-bar_frame_content = bar_comp(bar_frame, style)
+bar_frame_content = bar_comp(bar_frame, style, ruta_base_datos_consumos_listado)
 bar_frame_content.pack(fill="both", expand=True)
 
 notebook.add(calendario_frame, text='Calendario')
