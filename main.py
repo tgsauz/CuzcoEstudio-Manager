@@ -1,70 +1,75 @@
+import os
+
+import sys
+sys.path.append('../components/')
+
+from components.gui.calendar import CalendarioComp
+from components.gui.bar import BarComp
+from components.gui.expensas import ExpensasComp
+from components.logic import crear_tabla_reservas, crear_bandas_db, crear_consumo_db
+from components.config import set_rutas
+
 import tkinter as tk
 from tkinter import ttk
-from gui import AgendaTab, CalendarioTab, BandasTab, BarTab, WidgetStyleManager  # <--- Agrega ".gui" al inicio de la importación
-import logic
-import gui
 
-listaSala_combo = ["Sala A", "Sala B", "Sala C", "Sala Z", "ESTUDIO"]
-interfaces_to_update = []
+calendario_comp = CalendarioComp
+bar_comp = BarComp
+expensas_comp = ExpensasComp
 
-widget_manager = WidgetStyleManager()
+# Crear la ventana principal
+root = tk.Tk()
+root.geometry("750x500")
+root.title('CuzcoManager')
 
-def main():
-    # Crear la ventana principal
-    root = tk.Tk()
-    root.geometry("750x500")
-    root.title('CuzcoManager')
+style = ttk.Style(root)
 
-    #controller = AppController()
+current_directory = os.path.dirname(os.path.abspath(__file__))
+root.tk.call("source", (os.path.join(current_directory, "styles", "forest-dark.tcl")))
+root.tk.call("source", (os.path.join(current_directory, "styles", "forest-light.tcl")))
 
-    style = ttk.Style(root)
-    root.tk.call("source", "forest-light.tcl")
-    root.tk.call("source", "forest-dark.tcl")
-    style.theme_use("forest-light")
-    current_theme = style
+style.theme_use("forest-dark")
 
-    # Crear tabla de reservas en la base de datos
-    logic.crear_tabla_reservas()
-    logic.crear_db_tabs
+ruta_carpeta_data = os.path.join(current_directory, 'components', 'data')
+if not os.path.exists(ruta_carpeta_data):
+    os.makedirs(ruta_carpeta_data)
 
-    # Crear el Notebook para las pestañas
-    frame = ttk.Frame(root)
-    frame.pack()
-    notebook = ttk.Notebook(root)
-    notebook.pack(fill="both", expand=True)
+ruta_base_datos_reservas = os.path.join(ruta_carpeta_data, 'calendario_reservas.db')
+ruta_base_datos_bandas = os.path.join(ruta_carpeta_data, 'bandas_info.db')
+ruta_base_datos_consumos_listado = os.path.join(ruta_carpeta_data, 'consumos_listado.db')
 
-    tab_calendario = CalendarioTab(notebook, widget_manager)
-    interfaces_to_update.append(tab_calendario)
+set_rutas(ruta_base_datos_reservas, ruta_base_datos_bandas, ruta_base_datos_consumos_listado)
 
-    tab_bar = BarTab(notebook, listaSala_combo, style, widget_manager)
-    interfaces_to_update.append(tab_bar)
+crear_tabla_reservas(ruta_base_datos_reservas)
+crear_bandas_db(ruta_base_datos_bandas)
+crear_consumo_db(ruta_base_datos_consumos_listado)
 
-    tab_agenda = AgendaTab(notebook, tab_bar, notebook, listaSala_combo, widget_manager)
-    interfaces_to_update.append(tab_agenda)
+notebook = ttk.Notebook(root)
 
-    tab_bandas = BandasTab(notebook, widget_manager)
-    interfaces_to_update.append(tab_bandas)
+calendario_frame = ttk.Frame(notebook)
+bar_frame = tk.Frame(notebook)
+expensas_frame = ttk.Frame(notebook)
 
-    notebook.add(tab_agenda, text="Agenda de bandas")
-    notebook.add(tab_calendario, text="Calendario")
-    notebook.add(tab_bar, text="Bar")
-    notebook.add(tab_bandas, text="Bandas")
+calendario_frame_content = calendario_comp(calendario_frame, style, ruta_base_datos_reservas)
+calendario_frame_content.pack(fill="both", expand=True)
 
-    widget_manager.add_widget(tab_agenda)
-    widget_manager.add_widget(tab_bandas)
-    widget_manager.add_widget(tab_bar)
-    widget_manager.add_widget(tab_calendario)
+bar_frame_content = bar_comp(bar_frame, style, ruta_base_datos_consumos_listado)
+bar_frame_content.pack(fill="both", expand=True)
 
-    # Modo oscuro toggle
-    mode_switch = ttk.Checkbutton(
-        root, text="Dia/Noche", style="Switch", 
-        command=lambda: gui.toggle_mode(widget_manager))
-    mode_switch.place(x=640, y=7)
+expensas_frame_content = expensas_comp(expensas_frame, style, ruta_base_datos_consumos_listado)
+expensas_frame_content.pack(fill="both", expand=True)
 
-    # Cargar datos desde db
-    tab_agenda.cargar_datos_en_listado()
+notebook.add(calendario_frame, text='Calendario')
+notebook.add(bar_frame, text='Bar')
+notebook.add(expensas_frame, text='Expensas')
 
-    root.mainloop()
+notebook.pack(fill='both', expand=True)
 
-if __name__ == "__main__":
-    main()
+def on_tab_selected(event):
+    selected_tab = notebook.tab(notebook.select(), "text")
+    if selected_tab == 'Expensas':
+        expensas_frame_content.update_treeview()
+
+notebook.bind("<<NotebookTabChanged>>", on_tab_selected)
+    
+
+root.mainloop()
