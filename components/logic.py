@@ -21,6 +21,7 @@ def crear_tabla_reservas(ruta_base_datos_reservas):
     ''')
 
     # Cerrar la conexión con la base de datos
+    conexion.commit()
     conexion.close()
 
 def crear_bandas_db(ruta_base_datos_bandas):
@@ -96,18 +97,33 @@ def borrar_consumo(ruta_base_datos_consumos_listado, valores):
 def recuperar_consumos(ruta_base_datos_consumos_listado):
     conexion = sqlite3.connect(ruta_base_datos_consumos_listado)
     cursor = conexion.cursor()
-    cursor.execute("SELECT producto, cantidad, precio FROM Consumos")
+    cursor.execute("SELECT producto, cantidad, precio, id FROM Consumos")
     data = cursor.fetchall()
     conexion.close()
     return data
 
-def encontrar_consumo(ruta_base_datos_consumos_listado, producto, cantidad, precio):
+def editar_consumo(ruta_base_datos_consumos_listado, data):
     conexion = sqlite3.connect(ruta_base_datos_consumos_listado)
     cursor = conexion.cursor()
-    cursor.execute("SELECT producto, cantidad, precio FROM Consumos WHERE producto = ?, cantidad = ?, precio = ?", (producto, cantidad, precio))
-    data = cursor.fetchone()
-    conexion.close()
-    return data
+    try:
+        cursor.execute("SELECT producto, cantidad, precio, id FROM Consumos WHERE id = ?", (data[3],))
+        row = cursor.fetchone()
+        print("SelectedID: ", row[3], "DataID: ", data[3]) #DEBUG
+        if not row:
+            error = f"El producto {data[0]} no existe en la base de datos."
+            return error
+        
+        cursor.execute("UPDATE Consumos SET producto = ?, cantidad = ?, precio = ? WHERE id = ?", (data[0], data[1], data[2], data[3]))
+
+    except Exception as e:
+        print(f"Error al encontrar/editar el consumo: {e}")
+        conexion.close()
+        return 0
+    finally:
+        conexion.commit()
+        conexion.close()
+        return 1
+
 
 def guardar_reserva(ruta_base_datos_reservas, banda, sala, fecha, horario, tiempo):
 
@@ -182,9 +198,6 @@ def sala_disponible(sala, fecha, hora_inicio, hora_fin, ruta_base_datos_reservas
         print("Error en la conexión o consulta SQL:", e)
         return False
 
-def extraer_digito(tiempo):
-    return int(tiempo[0])
-
 def agregar_consumo_gasto(ruta_base_datos_consumos_listado, producto_name, cantidad):
 
     conexion = sqlite3.connect(ruta_base_datos_consumos_listado)
@@ -206,6 +219,8 @@ def agregar_consumo_gasto(ruta_base_datos_consumos_listado, producto_name, canti
 
     except Exception as e:
         print(f"Error al agregar el consumo: {e}")
+        conexion.close()
+        return 0
 
     finally:
         conexion.close()

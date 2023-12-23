@@ -19,7 +19,7 @@ class BarComp(ttk.Frame):
         self.notebook_and_content_frame = ttk.Frame(self)
         self.notebook_and_content_frame.pack(fill="both", expand=True)
 
-        self.button_add_tab = ttk.Button(self.button_bar_tab_frame, command=lambda: self.agregar_tab_nuevo(self.tab_consumption_treeviews_dictionary, self.selected_tab_index))
+        self.button_add_tab = ttk.Button(self.button_bar_tab_frame, command=lambda: self.agregar_tab_nuevo())
         self.button_add_tab.config(text='+', width=2)
         self.button_add_tab.pack(pady=(0,4), padx=(4,0), side=tk.RIGHT)
 
@@ -42,10 +42,12 @@ class BarComp(ttk.Frame):
     def setup_notebook(self):
         self.notebook_bar.bind("<<NotebookTabChanged>>", self.on_tab_selected)
 
-    def agregar_tab_nuevo(self, tab_consumption_treeviews_dictionary, selected_index):
+    def agregar_tab_nuevo(self):
 
         nombre_nuevo_tab = simpledialog.askstring("Nuevo Tab", "¿A nombre de quien?: ")
-        if nombre_nuevo_tab is None and not isinstance(nombre_nuevo_tab, str):
+        if nombre_nuevo_tab is None:
+            return
+        elif not isinstance(nombre_nuevo_tab, str) or not nombre_nuevo_tab.strip():
             messagebox.showwarning("Nombre inválido", "El nombre ingresado no es válido o está vacío.")
             return
         
@@ -60,7 +62,6 @@ class BarComp(ttk.Frame):
         self.tab_consumption_treeviews_dictionary[tab_index] = ttk.Treeview(new_tabs_treeview_frame, columns=("Producto", "Cantidad", "Precio", "Total"), show='headings')
         for col in ('Producto', 'Cantidad', 'Precio', 'Total'):
             self.tab_consumption_treeviews_dictionary[tab_index].heading(col, text=col, anchor=tk.CENTER)
-            self.tab_consumption_treeviews_dictionary[tab_index].column(col, anchor=tk.CENTER)
             self.tab_consumption_treeviews_dictionary[tab_index].column(col, anchor=tk.CENTER, width=Font().measure(col + 'WW'))
 
         selected_treeview = self.tab_consumption_treeviews_dictionary[tab_index]

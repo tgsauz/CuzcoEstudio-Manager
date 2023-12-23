@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from tkinter.font import Font
 
-from ..logic import extraer_digito, sala_disponible, guardar_reserva, recuperar_datos_reservas, borrar_reserva_por_id
+from ..logic import sala_disponible, guardar_reserva, recuperar_datos_reservas, borrar_reserva_por_id
 
 class AgendaWindow(tk.Toplevel):
     def __init__(self, parent, selected_date, data, style, ruta_base_datos_reservas):
@@ -105,7 +105,8 @@ class AgendaWindow(tk.Toplevel):
             tiempo = tiempo.replace(' hora', '')
 
         # Calcular el horario de fin de la reserva
-        digitoAux = extraer_digito(tiempo)
+
+        digitoAux = int(tiempo[0])
         minutos = digitoAux * 60
         hora_inicio_reserva = datetime.strptime(horario, "%H:%M")
         hora_fin_reserva = hora_inicio_reserva + timedelta(minutes=minutos)

@@ -132,3 +132,5 @@ dmypy.json
 .pyre/
 consumos_listado.db
 components/data/bandas_info.db
+components/data/calendario_reservas.db
+components/data/bandas_info.db

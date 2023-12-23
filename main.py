@@ -5,6 +5,7 @@ sys.path.append('../components/')
 
 from components.gui.calendar import CalendarioComp
 from components.gui.bar import BarComp
+from components.gui.expensas import ExpensasComp
 from components.logic import crear_tabla_reservas, crear_bandas_db, crear_consumo_db
 from components.config import set_rutas
 
@@ -13,6 +14,7 @@ from tkinter import ttk
 
 calendario_comp = CalendarioComp
 bar_comp = BarComp
+expensas_comp = ExpensasComp
 
 # Crear la ventana principal
 root = tk.Tk()
@@ -47,16 +49,27 @@ calendario_frame = ttk.Frame(notebook)
 bar_frame = tk.Frame(notebook)
 expensas_frame = ttk.Frame(notebook)
 
-calendario_frame_content = calendario_comp(calendario_frame, style)
+calendario_frame_content = calendario_comp(calendario_frame, style, ruta_base_datos_reservas)
 calendario_frame_content.pack(fill="both", expand=True)
 
 bar_frame_content = bar_comp(bar_frame, style, ruta_base_datos_consumos_listado)
 bar_frame_content.pack(fill="both", expand=True)
+
+expensas_frame_content = expensas_comp(expensas_frame, style, ruta_base_datos_consumos_listado)
+expensas_frame_content.pack(fill="both", expand=True)
 
 notebook.add(calendario_frame, text='Calendario')
 notebook.add(bar_frame, text='Bar')
 notebook.add(expensas_frame, text='Expensas')
 
 notebook.pack(fill='both', expand=True)
+
+def on_tab_selected(event):
+    selected_tab = notebook.tab(notebook.select(), "text")
+    if selected_tab == 'Expensas':
+        expensas_frame_content.update_treeview()
+
+notebook.bind("<<NotebookTabChanged>>", on_tab_selected)
+    
 
 root.mainloop()
